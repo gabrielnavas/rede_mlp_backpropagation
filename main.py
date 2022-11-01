@@ -4,22 +4,27 @@ from random import random
 import pprint
 from typing import List
 
+class MatrixHelp:
+   
+   @staticmethod
+   def obter_colunas(matrix: List[List[any]]):
+      coluna_index = 0
+      for coluna_y, _ in enumerate(matrix[0]):
+         coluna = []
+         for linha_x in range(len(matrix)):
+            coluna.append(matrix[linha_x][coluna_y])
+         # retorna uma coluna de cada vez
+         yield coluna, coluna_index
+         coluna_index += 1
+
+
 class Normalizacao:
    def __init__(self, grid: List[List[str | int | float]]):
       self.grid = grid
       self.valores_max_coluna: List[float] = []
       self.valores_min_coluna: List[float] = []
 
-   def __obter_colunas_grid(self):
-      coluna_index = 0
-      for coluna_y, _ in enumerate(self.grid[0]):
-         coluna = []
-         for linha_x in range(len(self.grid)):
-            coluna.append(self.grid[linha_x][coluna_y])
-         # retorna uma coluna de cada vez
-         yield coluna, coluna_index
-         coluna_index += 1
-
+   
    
    def __tentar_normalizar(self, valor, min_valor, max_valor):
       try:
@@ -28,7 +33,7 @@ class Normalizacao:
          return valor
 
    def normalizar(self):
-      for coluna, coluna_y in self.__obter_colunas_grid():
+      for coluna, coluna_y in MatrixHelp.obter_colunas(self.grid):
          valor_min = min(coluna)
          valor_max = max(coluna)
 
@@ -36,6 +41,71 @@ class Normalizacao:
             novo_valor = self.__tentar_normalizar(valor,valor_min, valor_max)
             self.grid[linha_x][coluna_y] = novo_valor
 
+class HotEncodeColuna:
+   def __init__(self, coluna: List[str | int | float]) -> None:
+      # coluna nao encodada
+      self.coluna = coluna
+
+      # coluna encodada
+      self.coluna_encoded: List[List[int]] = []
+
+      # nome não repitidos
+      self.nomes = []
+
+      # flag para marcar se é texto a coluna
+      try:
+         float(self.coluna[0])
+         self.is_text_column = False
+      except:
+         self.is_text_column = True
+   
+   def __pegar_nomes_classes(self):
+      # pega todos os nomes das classes, sem repitir
+      for nome in self.coluna:
+         if not nome in self.nomes:
+            self.nomes.append(nome)
+
+   def __hot_encode_classes(self):
+      # somente faz o hot encode se for maior que 2
+      if len(self.nomes) <= 2:
+         return 
+      
+      # adicionar nomes das classes nos cabecalhos
+      for nome in self.coluna:
+         #pegar o index na nome
+         index_nome = self.nomes.index(nome)
+
+         nomes_hot_encoded = [
+            1 if index == index_nome else 0 
+            for index, _ in enumerate(range(len(self.nomes)))]
+         self.coluna_encoded.append(nomes_hot_encoded)
+   
+   def encode(self):
+      self.__pegar_nomes_classes()
+      self.__hot_encode_classes()
+
+class HotEncodeGrid:
+   def __init__(self, grid: List[List[str | int | float]], cabecalho_grid: List[List[str]]) -> None:
+      self.grid = grid
+      self.cabecalho_grid = cabecalho_grid
+
+   def __transformar_lista_em_colunas_hot_encoded(self):
+      # remover lista de lista da grid e transformar tudo em coluna linear
+      # remover lista de lista do cabecalho grid e transformar tudo em coluna linear
+      pass
+
+   def encode(self):
+      for coluna, coluna_y in MatrixHelp.obter_colunas(self.grid):
+         hot_encode_coluna = HotEncodeColuna(coluna=coluna)
+         if hot_encode_coluna.is_text_column:
+            hot_encode_coluna.encode()
+            
+            # adiciona essa coluna no lugar da coluna de texto
+            for linha_x, _ in enumerate(range(len(self.grid))):
+               self.grid[linha_x][coluna_y] = hot_encode_coluna.coluna_encoded[linha_x]
+               self.cabecalho_grid[coluna_y] = hot_encode_coluna.nomes
+
+      self.__transformar_lista_em_colunas_hot_encoded()
 
 class Arquivo:
    def __init__(self, path: str) -> None:
@@ -89,58 +159,40 @@ class RedeNeural:
    def __init__(self, grid: List[List[float]], classes: List[str], cabecalho: List[str]) -> None:
       # todos os dados, menos as classes
       self.grid = grid 
-      self.grid_hot_encoded: List[str] = []
+      self.grid_normalizada_hot_encoded: List[List[float]] = []
 
-      # nomes todos os cabecalhos sem hot encode
-      self.cabecalho = cabecalho 
+      # nomes todos os cabecalhos da grid, sem hot encode
+      self.cabecalho_grid = cabecalho 
+      # cabecalho ja com os novos nomes de acordo com o hot encode
+      self.cabecalho_grid_hot_encoded: List[str] = []
 
-      # coluna classes inteira
+      # coluna classes inteira, sem hot encode
       self.classes = classes 
-
-      # nomes das classes sem hot encode
-      self.cabecalho_classes: List[str] = []
-
       # classes já transformado em binario
-      self.classes_hot_encoded: List[str] = []
-
-   def __pegar_nomes_classes(self):
-      # pega todos os nomes das classes, sem repitir
-      for classe in self.classes:
-         if not classe in self.cabecalho_classes:
-            self.cabecalho_classes.append(classe)
-
-   def __hot_encode_classes(self):
-      # somente faz o hot encode se for maior que 2
-      if len(self.classes) <= 2:
-         return 
-      
-      # adicionar nomes das classes nos cabecalhos
-      for classe in self.classes:
-         #pegar o index na classe
-         index_classe = self.cabecalho_classes.index(classe)
-
-         classe_hot_encoded = [
-            1 if index == index_classe else 0 
-            for index, _ in enumerate(range(len(self.cabecalho_classes)))]
-         self.classes_hot_encoded.append(classe_hot_encoded)
-
-   
+      self.classes_hot_encoded: List[list[float]] = []
 
    def configurar_classes(self):
-      self.__pegar_nomes_classes()
-      self.__hot_encode_classes()
-   
+      hot_encode = HotEncodeColuna(coluna=self.classes)
+      hot_encode.encode()
+      self.classes_hot_encoded = hot_encode.coluna_encoded
 
    def configurar_atributos(self):
       # normalizar as colunas numero entre 0 e 1, que não for texto
       normalizacao = Normalizacao(grid=dados.grid)
       normalizacao.normalizar()
-      self.grid_hot_encoded = normalizacao.grid
+      grid_normalizada = normalizacao.grid
       
-      # hot encoded nas colunas texto, aumentando a quantidade de colunas
-
-
-
+      # aplicar hot encoded na grid ja normalizada 
+      # verificando qual coluna é texto
+      # nas colunas texto, aumentando a quantidade de colunas
+      # TODO: arrumar colunas normalizadas de array em itens de lista
+      hot_encode_grid = HotEncodeGrid(grid=grid_normalizada, cabecalho_grid=self.cabecalho_grid)
+      hot_encode_grid.encode()
+      self.grid_normalizada_hot_encoded = hot_encode_grid.grid
+      self.cabecalho_grid_hot_encoded = hot_encode_grid.cabecalho_grid
+      pprint.pprint(self.grid_normalizada_hot_encoded)
+      
+         
 def iniciar_rede(bias, n_inputs, n_hidden, n_outputs):
    seed(1)
 
@@ -154,8 +206,6 @@ def iniciar_rede(bias, n_inputs, n_hidden, n_outputs):
    rede.append(camada_saida)
    
    return rede
-
-
 
 def somar_net_n(rede, entradas, camada_n):
    camada = rede[camada_n]
@@ -290,6 +340,5 @@ if __name__ == '__main__':
    # configura os atributos
    rede.configurar_atributos()
 
-   # pprint.pprint([', '.join([str(b) for b in a]) for a in rede_iniciada.classes_hot_encoded], indent=4)
    pprint.pprint(rede.classes_hot_encoded)
    
