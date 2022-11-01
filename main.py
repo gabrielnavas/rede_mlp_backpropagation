@@ -2,52 +2,40 @@ from random import seed
 from random import random
 
 import pprint
-from typing import List, Tuple
+from typing import List
 
 class Normalizacao:
-   def __init__(self, cabecalho: List[str], grid: List[List[str | int | float]]):
-      self.cabecalho = cabecalho
+   def __init__(self, grid: List[List[str | int | float]]):
       self.grid = grid
       self.valores_max_coluna: List[float] = []
       self.valores_min_coluna: List[float] = []
+
+   def __obter_colunas_grid(self):
+      coluna_index = 0
+      for coluna_y, _ in enumerate(self.grid[0]):
+         coluna = []
+         for linha_x in range(len(self.grid)):
+            coluna.append(self.grid[linha_x][coluna_y])
+         # retorna uma coluna de cada vez
+         yield coluna, coluna_index
+         coluna_index += 1
+
    
-   def __tentar_normalizar(self, index_x: int, index_y: int, atributo: str | int | float):
+   def __tentar_normalizar(self, valor, min_valor, max_valor):
       try:
-         # tornar float o valor
-         valor = float(atributo)
-         min_valor = self.valores_min_coluna[index_y]
-         max_valor = self.valores_max_coluna[index_y]
          return (valor-min_valor) / (max_valor - min_valor)
       except:
-         return self.grid[index_x][index_y]
-
-   def __valores_min_max_coluna(self):
-      primeira_linha = self.grid[0]
-      for coluna_index in range(len(primeira_linha)):
-         valores_coluna = [
-            linha[coluna_index]
-            for linha in self.grid
-         ]
-         try:
-            min_valor = min(valores_coluna)
-            max_valor = max(valores_coluna)
-            self.valores_max_coluna.append(max_valor)
-            self.valores_min_coluna.append(min_valor)
-         except:
-            self.valores_max_coluna.append(0)
-            self.valores_min_coluna(0)
-      
+         return valor
 
    def normalizar(self):
-      self.__valores_min_max_coluna()
-      
-      for index_x, linha in enumerate(self.grid):
-         atributos_linha = linha[0:-1]
-         for index_y, atributo in enumerate(atributos_linha):
-            valor = self.__tentar_normalizar(index_x, index_y, atributo)
-            self.grid[index_x][index_y] = valor
+      for coluna, coluna_y in self.__obter_colunas_grid():
+         valor_min = min(coluna)
+         valor_max = max(coluna)
 
-   
+         for linha_x, valor in enumerate(coluna):
+            novo_valor = self.__tentar_normalizar(valor,valor_min, valor_max)
+            self.grid[linha_x][coluna_y] = novo_valor
+
 
 class Arquivo:
    def __init__(self, path: str) -> None:
@@ -57,14 +45,14 @@ class Arquivo:
       self.classes = []
 
    def tornar_itens_grid_numericos(self):
-      for index_x, linha in enumerate(self.grid):
+      for index_x, atributos in enumerate(self.grid):
          # obtem range de atributos
-         atributos = linha[0:-1]
-         for index_y, coluna in enumerate(atributos):
+         for index_y, valor in enumerate(atributos):
+            # verifica se é numérico
             try:
-               self.grid[index_x][index_y] = float(coluna)
-            except Exception as ex :
-               print(ex)
+               self.grid[index_x][index_y] = float(valor)
+            except Exception as ex:
+               self.grid[index_x][index_y] = valor
 
    def ler_arquivo(self):
       with open(self.path, 'r') as file:
@@ -77,7 +65,6 @@ class Arquivo:
          
          # pega as classe
          self.classes = [linha.replace('\n', '').split(',')[-1] for linha in linhas[1:]]
-
 
 class FuncaoTranferencia:
    def linear(self, net):
@@ -98,46 +85,62 @@ class FuncaoTranferencia:
    def linear_logistica_derivada(self, net):
       raise 'falta implementar'
 
-
-class IniciarRedeNeural:
+class RedeNeural:
    def __init__(self, grid: List[List[float]], classes: List[str], cabecalho: List[str]) -> None:
-      self.grid = grid
-      self.cabecalho = cabecalho
+      # todos os dados, menos as classes
+      self.grid = grid 
+      self.grid_hot_encoded: List[str] = []
 
-      self.classes = classes
+      # nomes todos os cabecalhos sem hot encode
+      self.cabecalho = cabecalho 
 
-      self.cabecalho_classes = []
-      self.classes_hot_encoded: List[List[float]] = []
+      # coluna classes inteira
+      self.classes = classes 
 
-   def hot_encode_classes(self):
-      """
-         problema na funcao
-         CA
-         CB 
-         CD
-      """
+      # nomes das classes sem hot encode
+      self.cabecalho_classes: List[str] = []
 
-      # pegar nomes das classes
+      # classes já transformado em binario
+      self.classes_hot_encoded: List[str] = []
+
+   def __pegar_nomes_classes(self):
+      # pega todos os nomes das classes, sem repitir
       for classe in self.classes:
          if not classe in self.cabecalho_classes:
             self.cabecalho_classes.append(classe)
-            self.classes_hot_encoded.append([])
+
+   def __hot_encode_classes(self):
+      # somente faz o hot encode se for maior que 2
+      if len(self.classes) <= 2:
+         return 
       
       # adicionar nomes das classes nos cabecalhos
       for classe in self.classes:
          #pegar o index na classe
          index_classe = self.cabecalho_classes.index(classe)
-         
-         # adicionar 1 na classe que for igual e 0 no resto
-         for index_classe_host, classe_hot in enumerate(self.classes_hot_encoded):
-            if index_classe_host == index_classe:
-               classe_hot.append(1)
-            else:
-               classe_hot.append(0)
-         
-         
+
+         classe_hot_encoded = [
+            1 if index == index_classe else 0 
+            for index, _ in enumerate(range(len(self.cabecalho_classes)))]
+         self.classes_hot_encoded.append(classe_hot_encoded)
+
+   
+
+   def configurar_classes(self):
+      self.__pegar_nomes_classes()
+      self.__hot_encode_classes()
+   
+
+   def configurar_atributos(self):
+      # hot encoded nas colunas texto
 
 
+      # realiza a normalizacao na grid
+      normalizacao = Normalizacao(grid=dados.grid)
+      normalizacao.normalizar()
+      self.grid_hot_encoded = normalizacao.grid
+      # normalizar as colunas numero entre 0 e 1
+      pass
 
 def iniciar_rede(bias, n_inputs, n_hidden, n_outputs):
    seed(1)
@@ -266,7 +269,7 @@ def treinar_rede(rede, dados, taxa_aprendizagem):
 if __name__ == '__main__':
 
    # recebe arquivo de algum lugar
-   dados = Arquivo(path='/home/neo/Faculdade/TERMO_7/IA/2_BIM/TRABALHO/exemplo_base_dados/base_treinamento.csv')
+   dados = Arquivo(path='/home/neo/Faculdade/TERMO_7/IA/2_BIM/TRABALHO/exemplo_base_dados/test.csv')
    
    # le o arquivo
    dados.ler_arquivo()
@@ -274,14 +277,20 @@ if __name__ == '__main__':
    # torna a grid numerica, se der
    dados.tornar_itens_grid_numericos()
 
-   # realiza a normalizacao na grid
-   normalizacao = Normalizacao(cabecalho=dados.cabecalho, grid=dados.grid)
-   normalizacao.normalizar()
 
    # inicia a rede
-   rede_iniciada = IniciarRedeNeural(grid=normalizacao.grid, cabecalho=normalizacao.cabecalho, classes=dados.classes) 
-   rede_iniciada.hot_encode_classes()
+   rede = RedeNeural(
+      grid=dados.grid, 
+      cabecalho=dados.cabecalho, 
+      classes=dados.classes
+   ) 
+
+   # configura as classes (hot encoded etc)
+   rede.configurar_classes()
+   
+   # configura os atributos
+   rede.configurar_atributos()
 
    # pprint.pprint([', '.join([str(b) for b in a]) for a in rede_iniciada.classes_hot_encoded], indent=4)
-   # pprint.pprint(rede_iniciada.classes_hot_encoded[0])
+   pprint.pprint(rede.classes_hot_encoded)
    
