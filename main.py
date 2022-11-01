@@ -172,6 +172,7 @@ class RedeNeural:
       self.classes_hot_encoded: List[list[float]] = []
 
    def configurar_classes(self):
+      # TODO: colocar hot encode quando tiver mais de uma classe vai vir matrix NxM igual na grid
       hot_encode = HotEncodeColuna(coluna=self.classes)
       hot_encode.encode()
       self.classes_hot_encoded = hot_encode.coluna_encoded
