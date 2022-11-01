@@ -132,15 +132,14 @@ class RedeNeural:
    
 
    def configurar_atributos(self):
-      # hot encoded nas colunas texto
-
-
-      # realiza a normalizacao na grid
+      # normalizar as colunas numero entre 0 e 1, que não for texto
       normalizacao = Normalizacao(grid=dados.grid)
       normalizacao.normalizar()
       self.grid_hot_encoded = normalizacao.grid
-      # normalizar as colunas numero entre 0 e 1
-      pass
+      
+      # hot encoded nas colunas texto, aumentando a quantidade de colunas
+
+
 
 def iniciar_rede(bias, n_inputs, n_hidden, n_outputs):
    seed(1)
