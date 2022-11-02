@@ -1,18 +1,25 @@
 class FuncaoTransferencia:
-   def linear(self, net):
+   
+   @staticmethod
+   def linear(net):
       return net/10
 
-   def linear_derivada(self, net):
+   @staticmethod
+   def linear_derivada(net):
       return 1/10
 
-   def logistica(self, net):
+   @staticmethod
+   def logistica(net):
       raise 'falta implementar'
 
-   def logistica_linear(self, net):
+   @staticmethod
+   def logistica_linear(net):
       raise 'falta implementar'
 
-   def linear_logistica(self, net):
+   @staticmethod
+   def linear_logistica(net):
       raise 'falta implementar'
 
-   def linear_logistica_derivada(self, net):
+   @staticmethod
+   def linear_logistica_derivada(net):
       raise 'falta implementar'
