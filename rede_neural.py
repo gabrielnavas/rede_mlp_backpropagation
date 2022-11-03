@@ -1,5 +1,5 @@
 import math
-import pprint
+import numpy as np
 from random import random, seed
 from typing import List
 
@@ -22,7 +22,7 @@ class RedeNeural:
         self.grid = grid 
 
         # cabecalho ja com os novos nomes de acordo com o hot encode
-        self.cabecalho: List[str] = []
+        self.cabecalho: List[str] = cabecalho
 
         # coluna classes inteira, sem hot encode
         self.classes = classes 
@@ -31,9 +31,6 @@ class RedeNeural:
         self.quantidade_camada_entrada = 0
         self.quantidade_camada_saida = 0
         self.quantidade_camada_oculta = quantidade_camada_oculta
-
-        # rede em sí,com a camada de entrada, oculta e saida sendo configurada
-        self.rede = []
 
         # funções de calculo apos a somatoria nos neurónios
         self.funcao_saida = funcao_saida    
@@ -48,107 +45,57 @@ class RedeNeural:
         # usado para calcular os novos pesos
         self.taxa_aprendizagem = taxa_aprendizagem
 
+        # pesos da rede
+        self.pesos_camada_oculta= []
+        self.pesos_camada_saida= []
+
         self.__configurar()
 
     def __configurar(self):
         self.__quantidades_neuronios_camadas()
+        self.__iniciar_rede()
 
 
-    def iniciar_rede(self):
+    def __iniciar_rede(self):
         seed(1)
 
-        self.rede = list()
-        
-        camada_oculta = [{'peso':[random() for i in range(self.quantidade_camada_entrada)]} for i in range(self.quantidade_camada_oculta)]
-        self.rede.append(camada_oculta)
-        
-        camada_saida = [{'peso':[random() for i in range(self.quantidade_camada_oculta)]} for i in range(self.quantidade_camada_saida)]
-        self.rede.append(camada_saida)
-    
-    def somar_net_n(self, entradas, camada_n):
-        camada = self.rede[camada_n]
+        # montar pesos camada oculta
+        for _ in range(self.quantidade_camada_entrada):
+            entrada = []
+            for _ in range(self.quantidade_camada_oculta):
+                valor_random = random()
+                entrada.append(valor_random)
+            self.pesos_camada_oculta.append(entrada)
 
-        for no in camada:
-            soma = 0.00
-            for peso, entrada in zip(no['peso'], entradas):
-                soma += float(entrada * peso)
-            no['net'] = soma   
+        # montar pesos camada saida
+        for _ in range(self.quantidade_camada_oculta):
+            entrada = []
+            for _ in range(self.quantidade_camada_saida):
+                valor_random = random()
+                entrada.append(valor_random)
+            self.pesos_camada_saida.append(entrada)
 
-    def calcular_saida_camada_oculta_n(self, func_saida, camada_n):
-        camada_oculta = self.rede[camada_n]
-        
-        for no in camada_oculta:
-            saida = func_saida(no['net'])
-            no['saida'] = saida
+    def treinar(self):
 
-    def calc_erro_saida(self, saidas_esperada, calc_saida_derivada):
-        camada_saida = self.rede[-1]
+        # transform to numpy array instances
+        self.pesos_camada_oculta = np.array(self.pesos_camada_oculta)
+        self.pesos_camada_saida = np.array(self.pesos_camada_saida)
 
-        for no, saida_esperada in zip(camada_saida, saidas_esperada):
-            erro_n = (saida_esperada - no['saida']) * calc_saida_derivada(no['saida'])
-            no['erro'] = erro_n
+        saidas_camada_oculta = []
+        saidas_camada_saida = []
 
-    def continuar_treinando(self):
-        return True
+        for linha in zip(self.grid):
+            somas = np.dot(np.array(linha), self.pesos_camada_oculta) 
+            saidas_camada_oculta = self.funcao_saida(somas)
 
-
-    def calc_erro_saida_n(self, camada_n):
-        camada_atual = self.rede[camada_n]
-        camada_proxima = self.rede[camada_n + 1]
-
-        for index_camada_atual, no_atual in enumerate(camada_atual):
-            erro_no_atual = 0.00
-            for no_proximo in camada_proxima:
-                erro_no_atual += float(no_proximo['peso'][index_camada_atual] * no_proximo['erro'] * self.funcao_saida_derivada(no_atual['net']))
-            no_atual['erro'] = erro_no_atual
-
-
-    def calc_novos_pesos(self, entradas, camada_n):
-        camada = self.rede[camada_n]
-        
-        for no in camada:
-            for (index_peso, peso), entrada in zip(enumerate(no['peso']), entradas):
-                novo_peso = peso + (self.taxa_aprendizagem * no['erro'] * entrada)
-                no['peso'][index_peso] = novo_peso
-
-
-    def treinar_rede(self):
-
-        for linha_x, linha in enumerate(self.grid):
-
-            saida_esperada = self.classes[linha_x]
-
-
-            # soma net e saida da camada de saida
-            self.somar_net_n(linha, camada_n=0)
-            self.calcular_saida_camada_oculta_n(self.funcao_saida, camada_n=0)
-
-            # pega a saida e que é a entrada do proximo
-            saida_anterior = []
-            for no in self.rede[0]:
-                saida_anterior.append(no['saida'])
-
-            # soma net e saida da camada de saida
-            self.somar_net_n(saida_anterior, camada_n=1)
-            self.calcular_saida_camada_oculta_n(self.funcao_saida, camada_n=1)
-
-            # calcula o erro de saida
-            self.calc_erro_saida(saida_esperada, self.funcao_saida_derivada)
-
-            # verifica o erro geral da self.rede
-            if not self.continuar_treinando():
-                break
-
-            # calcular erro camada oculta
-            self.calc_erro_saida_n(camada_n=0)
-
-            # calcular os novos pesos camada saida
-            self.calc_novos_pesos(entradas=saida_anterior, camada_n=1)
+            somas = np.dot(saidas_camada_oculta, self.pesos_camada_saida) 
+            saidas_camada_saida = self.funcao_saida(somas)
             
-            # calcular os novos pesos camada oculta
-            self.calc_novos_pesos(entradas=linha, camada_n=0)
+            # calcular erro de saida
+            # calcular erro camada oculta
+            # atualizar pesos da camada de saida
+            # atualizar pesos da camada de oculta
 
-            pprint.pprint(self.rede, indent=4)
 
     def __quantidades_neuronios_camadas(self):
         self.quantidade_camada_entrada = len(self.grid[0])

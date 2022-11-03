@@ -154,11 +154,8 @@ if __name__ == '__main__':
       taxa_aprendizagem=1
    )
 
-   # iniciar rede
-   rede_neural.iniciar_rede()
-
    # treinar a rede 
    # TODO: essa funcao não está funcionando
-   rede_neural.treinar_rede()
+   rede_neural.treinar()
 
    
