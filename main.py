@@ -5,6 +5,7 @@ import pprint
 from arquivo import Arquivo
 
 from funcao_transferencia import FuncaoTransferencia
+from configurar_rede_neural import ConfigurarRedeNeural
 from rede_neural import RedeNeural
 
 # def iniciar_rede(bias, n_inputs, n_hidden, n_outputs):
@@ -127,7 +128,7 @@ if __name__ == '__main__':
    dados.tornar_itens_grid_numericos()
 
    # inicia a rede
-   rede = RedeNeural(
+   rede_neural_configurada = ConfigurarRedeNeural(
       grid=dados.grid, 
       cabecalho=dados.cabecalho, 
       classes=dados.classes,
@@ -139,15 +140,25 @@ if __name__ == '__main__':
    ) 
 
    # configura as classes (hot encoded etc) e os atributos
-   rede.configurar()
+   rede_neural_configurada.configurar()
+
+   # rede neural para treinar
+   rede_neural = RedeNeural(
+      cabecalho=rede_neural_configurada.cabecalho_grid_hot_encoded,
+      classes=rede_neural_configurada.classes_hot_encoded,
+      grid=rede_neural_configurada.grid_normalizada_hot_encoded,
+      funcao_saida=FuncaoTransferencia.linear,
+      funcao_saida_derivada=FuncaoTransferencia.linear_derivada,
+      limiar_erro=0.00001,
+      quantidade_iteracoes=2000,
+      taxa_aprendizagem=1
+   )
 
    # iniciar rede
-   rede.iniciar_rede()
+   rede_neural.iniciar_rede()
 
    # treinar a rede 
    # TODO: essa funcao não está funcionando
-   rede.treinar_rede()
+   rede_neural.treinar_rede()
 
-   pprint.pprint(rede.cabecalho_grid_hot_encoded)
-   # pprint.pprint(rede.classes_hot_encoded)
    

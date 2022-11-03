@@ -1,14 +1,7 @@
 import math
-from random import seed
-from random import random
-
 import pprint
+from random import random, seed
 from typing import List
-
-from hot_encode_coluna import HotEncodeColuna
-from normalizacao import Normalizacao
-
-from hot_encode_grid import HotEncodeGrid
 
 from funcao_transferencia import FuncaoTransferencia
 
@@ -16,7 +9,7 @@ class RedeNeural:
     def __init__(
         self, 
         grid: List[List[float]], 
-        classes: List[str], 
+        classes: List[list[float]], 
         cabecalho: List[str], 
         quantidade_camada_oculta: int=0,
         quantidade_iteracoes: int = 2000,
@@ -27,17 +20,12 @@ class RedeNeural:
         ) -> None:
         # todos os dados, menos as classes
         self.grid = grid 
-        self.grid_normalizada_hot_encoded: List[List[float]] = []
 
-        # nomes todos os cabecalhos da grid, sem hot encode
-        self.cabecalho_grid = cabecalho 
         # cabecalho ja com os novos nomes de acordo com o hot encode
-        self.cabecalho_grid_hot_encoded: List[str] = []
+        self.cabecalho: List[str] = []
 
         # coluna classes inteira, sem hot encode
         self.classes = classes 
-        # classes já transformado em binario
-        self.classes_hot_encoded: List[list[float]] = []
         
         # quantidades entrada, saida, oculta (calculado na configuracao)
         self.quantidade_camada_entrada = 0
@@ -60,9 +48,9 @@ class RedeNeural:
         # usado para calcular os novos pesos
         self.taxa_aprendizagem = taxa_aprendizagem
 
-    def configurar(self):
-        self.__configurar_classes()
-        self.__configurar_atributos()
+        self.__configurar()
+
+    def __configurar(self):
         self.__quantidades_neuronios_camadas()
 
 
@@ -126,9 +114,10 @@ class RedeNeural:
 
     def treinar_rede(self):
 
-        for linha_x, linha in enumerate(self.grid_normalizada_hot_encoded):
+        for linha_x, linha in enumerate(self.grid):
 
-            saida_esperada = self.classes_hot_encoded[linha_x]
+            saida_esperada = self.classes[linha_x]
+
 
             # soma net e saida da camada de saida
             self.somar_net_n(linha, camada_n=0)
@@ -161,26 +150,9 @@ class RedeNeural:
 
             pprint.pprint(self.rede, indent=4)
 
-
-    def __configurar_classes(self):
-        hot_encode = HotEncodeColuna(coluna=self.classes)
-        hot_encode.encode()
-        self.classes_hot_encoded = hot_encode.coluna_encoded
-
-    def __configurar_atributos(self):
-        normalizacao = Normalizacao(grid=self.grid)
-        normalizacao.normalizar()
-        grid_normalizada = normalizacao.grid
-        
-        hot_encode_grid = HotEncodeGrid(grid=grid_normalizada, cabecalho_grid=self.cabecalho_grid)
-        hot_encode_grid.encode()
-        self.grid_normalizada_hot_encoded = hot_encode_grid.grid
-        self.cabecalho_grid_hot_encoded = hot_encode_grid.cabecalho_grid
-        pprint.pprint(self.grid_normalizada_hot_encoded)
-
     def __quantidades_neuronios_camadas(self):
-        self.quantidade_camada_entrada = len(self.grid_normalizada_hot_encoded[0])
-        self.quantidade_camada_saida = len(self.cabecalho_grid_hot_encoded)
+        self.quantidade_camada_entrada = len(self.grid[0])
+        self.quantidade_camada_saida = len(self.cabecalho)
         
         calcular_quantidade_camada_oculta = lambda quantidade_camada_entrada, quantidade_camada_oculta: math.ceil((quantidade_camada_entrada + quantidade_camada_oculta) / 2)
         
