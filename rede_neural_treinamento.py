@@ -107,7 +107,7 @@ class RedeNeuralTreinamento:
         saidas_camada_saida = []
         media_erro_rede = self.limiar_erro + 1
 
-        while media_erro_rede > self.limiar_erro and self.epocas < self.quantidade_iteracoes:
+        while round(media_erro_rede, 4) > round(self.limiar_erro, 4) and self.epocas < self.quantidade_iteracoes:
 
             for index_linha, linha in enumerate(self.grid):
 
@@ -126,7 +126,7 @@ class RedeNeuralTreinamento:
                     self.erros_camada_saida[index_camada_saida] = erro
 
                 # calcular erro da rede, somatória erro quadratica * meio
-                erro_rede_linha = self.__calcular_erro_rede_linha(self.erros_camada_saida)
+                erro_rede_linha = self.__calcular_erro_rede_linha(self.erros_camada_saida)  
                 
                 # adicionar na lista esse erro, linha por linha
                 self.erros_rede.append(erro_rede_linha) 
@@ -162,7 +162,7 @@ class RedeNeuralTreinamento:
             media_erro_rede = self.__calcular_media_erro_rede()
             self.epocas += 1
 
-            print(self.epocas, media_erro_rede)
+            print(self.epocas, media_erro_rede, self.limiar_erro)
 
     def __configurar_quantidades_neuronios_camadas(self):
         self.quantidade_camada_entrada = len(self.grid[0])

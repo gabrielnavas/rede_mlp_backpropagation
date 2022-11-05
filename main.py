@@ -44,8 +44,8 @@ if __name__ == '__main__':
       grid=rede_neural_configurada_treinamento.grid_normalizada_hot_encoded,
       funcao_saida=funcao_transferencia_saida,
       funcao_saida_derivada=funcao_transferencia_derivada_saida,
-      limiar_erro=0.00001,
-      quantidade_iteracoes=2000,
+      limiar_erro=0.0001,
+      quantidade_iteracoes=500,
       taxa_aprendizagem=1
    )
 
