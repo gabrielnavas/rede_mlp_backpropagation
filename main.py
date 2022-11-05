@@ -45,7 +45,7 @@ if __name__ == '__main__':
       funcao_saida=funcao_transferencia_saida,
       funcao_saida_derivada=funcao_transferencia_derivada_saida,
       limiar_erro=0.00001,
-      quantidade_iteracoes=10,
+      quantidade_iteracoes=2000,
       taxa_aprendizagem=1
    )
 
