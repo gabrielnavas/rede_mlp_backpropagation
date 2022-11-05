@@ -29,6 +29,9 @@ class ConfigurarDados:
         self.classes = classes 
         # classes já transformado em binario
         self.classes_hot_encoded: List[list[float]] = []
+
+        # nomes das classes sem repitir
+        self.nomes_classes: List[str] = []
         
     def configurar(self):
         self.__configurar_classes()
@@ -43,6 +46,7 @@ class ConfigurarDados:
     def __configurar_classes(self):
         hot_encode = HotEncodeColuna(coluna=self.classes)
         hot_encode.encode()
+        self.nomes_classes = hot_encode.nomes
         self.classes_hot_encoded = hot_encode.coluna_encoded
 
     def __configurar_atributos(self):
